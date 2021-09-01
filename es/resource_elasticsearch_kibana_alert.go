@@ -29,13 +29,13 @@ func resourceElasticsearchKibanaAlert() *schema.Resource {
 				Type:        schema.TypeString,
 				ForceNew:    true,
 				Required:    true,
-				Description: "",
+				Description: "The name of the alert, does not have to be unique, used to identify and find an alert.",
 			},
 			"tags": {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
-				Description: "",
+				Description: "A list of tag names, they appear in the alert listing in the UI which is searchable by tag.",
 			},
 			"alert_type_id": {
 				Type:        schema.TypeString,
@@ -48,12 +48,13 @@ func resourceElasticsearchKibanaAlert() *schema.Resource {
 				MaxItems:    1,
 				MinItems:    1,
 				Optional:    true,
-				Description: "",
+				Description: "How frequently the alert conditions are checked. Note that the timing of evaluating alerts is not guaranteed, particularly for intervals of less than 10 seconds",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interval": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Specifies the interval in seconds, minutes, hours or days at which the alert should execute, e.g. 10s, 5m, 1h.",
 						},
 					},
 				},
@@ -61,7 +62,7 @@ func resourceElasticsearchKibanaAlert() *schema.Resource {
 			"throttle": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "",
+				Description: "How often this alert should fire the same action, this reduces repeated notifications.",
 			},
 			"notify_when": {
 				Type:        schema.TypeString,
@@ -72,7 +73,7 @@ func resourceElasticsearchKibanaAlert() *schema.Resource {
 				Type:        schema.TypeBool,
 				Default:     true,
 				Optional:    true,
-				Description: "",
+				Description: "Whether the alert is scheduled for evaluation.",
 			},
 			"consumer": {
 				Type:        schema.TypeString,
@@ -144,25 +145,29 @@ func resourceElasticsearchKibanaAlert() *schema.Resource {
 			"actions": {
 				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "",
+				Description: "Actions are invocations of Kibana services or integrations with third-party systems, that run as background tasks on the Kibana server when alert conditions are met.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"group": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "default",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "default",
+							Description: "When to execute the action, e.g. `threshold met` or `recovered`.",
 						},
 						"id": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The identifier of the saved action object, a UUID.",
 						},
 						"action_type_id": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The type of the action, e.g. `.index`, `.webhook`, etc.",
 						},
 						"params": {
-							Type:     schema.TypeMap,
-							Optional: true,
+							Type:        schema.TypeMap,
+							Optional:    true,
+							Description: "Key value pairs passed to the action executor, e.g. a Mustache formatted `message`.",
 						},
 					},
 				},
@@ -238,7 +243,7 @@ func resourceElasticsearchKibanaAlertRead(d *schema.ResourceData, meta interface
 	ds.set("enabled", alert.Enabled)
 	ds.set("consumer", alert.Consumer)
 	ds.set("conditions", flattenKibanaAlertConditions(alert.Params))
-	// ds.set("actions", alert.Actions) // TODO
+	ds.set("actions", flattenInterfaceSet(flattenKibanaAlertActions(alert.Actions)))
 
 	return ds.err
 }
@@ -348,6 +353,15 @@ func expandKibanaActionsList(resourcesArray []interface{}) ([]kibana.AlertAction
 	}
 
 	return actions, nil
+}
+
+func flattenKibanaAlertActions(raw []kibana.AlertAction) []interface{} {
+	actions := make([]interface{}, 0, len(raw))
+
+	for a := range raw {
+		actions = append(actions, a)
+	}
+	return actions
 }
 
 func expandKibanaAlertConditions(raw map[string]interface{}) map[string]interface{} {
