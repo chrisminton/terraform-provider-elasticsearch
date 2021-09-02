@@ -78,15 +78,18 @@ jobs:
     # While docker/ES is booting up, run the linters
     - name: Get dependencies
       run: |
+        #
+        go install github.com/katbyte/terrafmt
         go mod vendor
-    - name: Run check scripts
-      run: |
-        ./script/test-mod-tidy
     - name: Install managed version of terraform
       uses: hashicorp/setup-terraform@v1
       with:
         terraform_version: 0.14.11
         terraform_wrapper: false
+    - name: Run check scripts
+      run: |
+        ./script/test-mod-tidy
+        ./script/test-terraform-fmt
     - name: Wait for Elasticsearch
       # ensure that ES has come up and is available
       run: |
